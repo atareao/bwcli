@@ -1,4 +1,5 @@
 use reqwest::Client;
+use std::collections::HashMap;
 
 
 #[derive(Debug)]
@@ -22,15 +23,14 @@ impl<'a> WardenCli<'a> {
     }
     pub async fn login(&self){
         let url = format!("https://{}/identity/connect/token", self.url);
+        let mut params = HashMap::new();
+        params.insert("grant_type", "client_credentials");
+        params.insert("scope", "api.organization");
+        params.insert("client_id", self.client_id);
+        params.insert("client_secret", self.client_secret);
         let client = Client::new();
-        let body = serde_json::json!({
-            "grant_type": "client_credentials",
-            "scope": "api.organization",
-            "client_id": self.client_id,
-            "client_secret": self.client_secret
-        });
         let response = client.post(url)
-            .body(body.to_string())
+            .form(&params)
             .send()
             .await;
         println!("{:?}", response);
@@ -48,7 +48,6 @@ mod tests {
         let client_id = std::env::var("CLIENT_ID").expect("CLIENT_ID not set");
         let client_secret = std::env::var("CLIENT_SECRET").expect("CLIENT_SECRET not set");
         let wardencli = WardenCli::new(&url, &client_id, &client_secret);
-        wardencli.login().await;
         let result = 2 + 2;
         assert_eq!(result, 4);
     }
